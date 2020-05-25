@@ -2,7 +2,7 @@
 //
 // Delphi MVC Framework
 //
-// Copyright (c) 2010-2018 Daniele Teti and the DMVCFramework Team
+// Copyright (c) 2010-2020 Daniele Teti and the DMVCFramework Team
 //
 // https://github.com/danieleteti/delphimvcframework
 //
@@ -28,6 +28,7 @@ program renders;
 
 {$APPTYPE CONSOLE}
 
+
 uses
   System.SysUtils,
   IdHTTPWebBrokerBridge,
@@ -43,9 +44,12 @@ uses
   CustomTypesSerializersU in 'CustomTypesSerializersU.pas',
   InMemoryDataU in 'InMemoryDataU.pas',
   MVCFramework.DataSet.Utils in '..\..\sources\MVCFramework.DataSet.Utils.pas',
-  RandomUtilsU in '..\commons\RandomUtilsU.pas';
+  RandomUtilsU in '..\commons\RandomUtilsU.pas',
+  MVCFramework.Serializer.JsonDataObjects.OptionalCustomTypes in '..\..\sources\MVCFramework.Serializer.JsonDataObjects.OptionalCustomTypes.pas',
+  MVCFramework.Serializer.JsonDataObjects.CustomTypes in '..\..\sources\MVCFramework.Serializer.JsonDataObjects.CustomTypes.pas';
 
 {$R *.res}
+
 
 procedure RunServer(APort: Integer);
 var

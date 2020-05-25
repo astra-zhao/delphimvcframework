@@ -2,7 +2,7 @@ object MainForm: TMainForm
   Left = 0
   Top = 0
   Caption = 'TMVCActiveRecord - ShowCase'
-  ClientHeight = 299
+  ClientHeight = 522
   ClientWidth = 635
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -11,10 +11,11 @@ object MainForm: TMainForm
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
-  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnShow = FormShow
   DesignSize = (
     635
-    299)
+    522)
   PixelsPerInch = 96
   TextHeight = 13
   object btnCRUD: TButton
@@ -28,7 +29,7 @@ object MainForm: TMainForm
   end
   object btnSelect: TButton
     Left = 8
-    Top = 47
+    Top = 203
     Width = 121
     Height = 33
     Caption = 'Queries'
@@ -39,20 +40,27 @@ object MainForm: TMainForm
     Left = 135
     Top = 8
     Width = 492
-    Height = 283
+    Height = 506
     Anchors = [akLeft, akTop, akRight, akBottom]
+    Ctl3D = True
+    DoubleBuffered = True
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
     Font.Height = -13
     Font.Name = 'Consolas'
     Font.Style = []
+    ParentCtl3D = False
+    ParentDoubleBuffered = False
     ParentFont = False
-    ScrollBars = ssVertical
+    ReadOnly = True
+    ScrollBars = ssBoth
     TabOrder = 2
+    WantReturns = False
+    WordWrap = False
   end
   object btnRelations: TButton
     Left = 8
-    Top = 86
+    Top = 242
     Width = 121
     Height = 35
     Caption = 'Relations'
@@ -61,7 +69,7 @@ object MainForm: TMainForm
   end
   object btnInheritance: TButton
     Left = 8
-    Top = 127
+    Top = 283
     Width = 121
     Height = 34
     Caption = 'Inheritance'
@@ -70,7 +78,7 @@ object MainForm: TMainForm
   end
   object btnValidation: TButton
     Left = 8
-    Top = 167
+    Top = 323
     Width = 121
     Height = 34
     Caption = 'Validation'
@@ -79,7 +87,7 @@ object MainForm: TMainForm
   end
   object btnMultiThreading: TButton
     Left = 8
-    Top = 247
+    Top = 403
     Width = 121
     Height = 34
     Caption = 'Multi Threading'
@@ -88,22 +96,61 @@ object MainForm: TMainForm
   end
   object btnRQL: TButton
     Left = 8
-    Top = 207
+    Top = 363
     Width = 121
     Height = 34
     Caption = 'RQL Query'
     TabOrder = 7
     OnClick = btnRQLClick
   end
+  object btnTransientFields: TButton
+    Left = 8
+    Top = 164
+    Width = 121
+    Height = 33
+    Caption = 'CRUD Transient'
+    TabOrder = 8
+    OnClick = btnTransientFieldsClick
+  end
+  object btnNullTest: TButton
+    Left = 8
+    Top = 443
+    Width = 121
+    Height = 34
+    Caption = 'Nullables'
+    TabOrder = 9
+    OnClick = btnNullTestClick
+  end
+  object btnCRUDNoAutoInc: TButton
+    Left = 8
+    Top = 47
+    Width = 121
+    Height = 33
+    Caption = 'CRUD (no autoinc)'
+    TabOrder = 10
+    OnClick = btnCRUDNoAutoIncClick
+  end
+  object btnCRUDWithStringPKs: TButton
+    Left = 8
+    Top = 86
+    Width = 121
+    Height = 33
+    Caption = 'CRUD (string pks)'
+    TabOrder = 11
+    OnClick = btnCRUDWithStringPKsClick
+  end
+  object btnWithSpaces: TButton
+    Left = 8
+    Top = 125
+    Width = 121
+    Height = 33
+    Caption = 'CRUD (entity with spaces)'
+    TabOrder = 12
+    WordWrap = True
+    OnClick = btnWithSpacesClick
+  end
   object FDConnection1: TFDConnection
-    Params.Strings = (
-      'User_Name=sysdba'
-      'Password=masterkey'
-      
-        'Database=C:\DEV\dmvcframework\samples\data\ORDERSMANAGER_FB30.FD' +
-        'B'
-      'DriverID=FB')
-    Left = 184
-    Top = 40
+    Left = 176
+    Top = 56
   end
 end

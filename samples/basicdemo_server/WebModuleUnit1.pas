@@ -27,13 +27,25 @@ implementation
 {$R *.dfm}
 
 
-uses App1MainControllerU, MVCFramework.Commons;
+uses
+  App1MainControllerU,
+  MVCFramework.Commons,
+  MVCFramework.Middleware.StaticFiles;
 
 procedure TWebModule1.WebModuleCreate(Sender: TObject);
 begin
-  MVC := TMVCEngine.Create(Self);
-  MVC.Config[TMVCConfigKey.ViewPath] := '.\www\public_html';
-  MVC.Config[TMVCConfigKey.DocumentRoot] := '.\www\public_html';
+  MVC := TMVCEngine.Create(Self,
+    procedure(Config: TMVCConfig)
+    begin
+      Config[TMVCConfigKey.ViewPath] := '.\www\public_html';
+    end);
+
+  // Web files
+  MVC.AddMiddleware(TMVCStaticFilesMiddleware.Create('/', '.\www\public_html'));
+
+  // Image files
+  MVC.AddMiddleware(TMVCStaticFilesMiddleware.Create('/images', '.\www\public_images', 'database.png'));
+
   MVC.AddController(TApp1MainController);
 end;
 

@@ -2,7 +2,7 @@
 //
 // Delphi MVC Framework
 //
-// Copyright (c) 2010-2017 Daniele Teti and the DMVCFramework Team
+// Copyright (c) 2010-2020 Daniele Teti and the DMVCFramework Team
 //
 // https://github.com/danieleteti/delphimvcframework
 //
@@ -26,20 +26,28 @@ unit WebModuleUnit;
 
 interface
 
-uses System.SysUtils,
+uses
+  System.SysUtils,
   System.Classes,
   Web.HTTPApp,
-  MVCFramework;
+  MVCFramework
+{$IFDEF MSWINDOWS}
+    ,
+  MVCFramework.Serializer.JsonDataObjects.OptionalCustomTypes,
+  FireDAC.Stan.StorageJSON
+{$ENDIF}
+    ;
 
 type
-  Tbas = class(TWebModule)
+  TMainWebModule = class(TWebModule)
+    FDStanStorageJSONLink1: TFDStanStorageJSONLink;
     procedure WebModuleCreate(Sender: TObject);
   private
     MVCEngine: TMVCEngine;
   end;
 
 var
-  WebModuleClass: TComponentClass = Tbas;
+  WebModuleClass: TComponentClass = TMainWebModule;
 
 implementation
 
@@ -47,18 +55,29 @@ implementation
 
 
 uses
-  TestServerControllerU, TestServerControllerExceptionU, SpeedMiddlewareU,
-  MVCFramework.Middleware.Authentication, System.Generics.Collections,
-  MVCFramework.Commons, TestServerControllerPrivateU, AuthHandlersU,
-  TestServerControllerJSONRPCU, MVCFramework.Middleware.Compression;
+  TestServerControllerU,
+  TestServerControllerExceptionU,
+  SpeedMiddlewareU,
+  MVCFramework.Middleware.Authentication,
+  System.Generics.Collections,
+  MVCFramework.Commons,
+  TestServerControllerPrivateU,
+  AuthHandlersU,
+  TestServerControllerJSONRPCU,
+  MVCFramework.View.Renderers.Mustache,
+  MVCFramework.Middleware.Compression,
+  MVCFramework.Middleware.StaticFiles;
 
-procedure Tbas.WebModuleCreate(Sender: TObject);
+procedure TMainWebModule.WebModuleCreate(Sender: TObject);
 begin
   MVCEngine := TMVCEngine.Create(self,
     procedure(Config: TMVCConfig)
     begin
       // no config here
-      Config[TMVCConfigKey.SessionTimeout] := '0'; // settion cookie
+      Config[TMVCConfigKey.SessionTimeout] := '0'; // setting cookie
+      Config[TMVCConfigKey.PathPrefix] := '';
+      Config[TMVCConfigKey.ViewPath] := '..\templates';
+      Config[TMVCConfigKey.DefaultViewFileExtension] := 'html';
     end, nil);
   MVCEngine.AddController(TTestServerController)
     .AddController(TTestPrivateServerController)
@@ -67,18 +86,28 @@ begin
     .AddController(TTestServerControllerActionFilters)
     .AddController(TTestPrivateServerControllerCustomAuth)
     .AddController(TTestJSONRPCController, '/jsonrpc')
-    .AddController(TTestFaultController) //this will raise an exception
+    .PublishObject(
+    function: TObject
+    begin
+      Result := TTestJSONRPCClass.Create
+    end, '/jsonrpcclass')
+    .AddController(TTestFaultController) // this will raise an exception
     .AddController(TTestFault2Controller,
-      function: TMVCController
-      begin
-        Result := TTestFault2Controller.Create; //this will raise an exception
-      end)
+    function: TMVCController
+    begin
+      Result := TTestFault2Controller.Create; // this will raise an exception
+    end)
     .AddMiddleware(TMVCSpeedMiddleware.Create)
+    .AddMiddleware(TMVCStaticFilesMiddleware.Create('/', '..\www', 'index.html', False))
+    .AddMiddleware(TMVCStaticFilesMiddleware.Create('/static', '..\www', 'index.html', False))
+    .AddMiddleware(TMVCStaticFilesMiddleware.Create('/spa', '..\www', 'index.html', True))
     .AddMiddleware(TMVCBasicAuthenticationMiddleware.Create(TBasicAuthHandler.Create))
     .AddMiddleware(TMVCCustomAuthenticationMiddleware.Create(TCustomAuthHandler.Create, '/system/users/logged'))
     .AddMiddleware(TMVCCompressionMiddleware.Create);
-
-  // MVCEngine.Config[TMVCConfigKey.Messaging] := 'false';
+  MVCEngine.SetViewEngine(TMVCMustacheViewEngine);
+{$IFDEF MSWINDOWS}
+  RegisterOptionalCustomTypesSerializers(MVCEngine.Serializers[TMVCMediaType.APPLICATION_JSON]);
+{$ENDIF}
 end;
 
 end.

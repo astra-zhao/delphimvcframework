@@ -31,15 +31,25 @@ implementation
 
 {$R *.dfm}
 
+
 uses
+  MVCFramework.Middleware.StaticFiles,
   RESTControllerCustomerU;
 
 procedure TwmSOAPREST.WebModuleCreate(Sender: TObject);
 begin
-  FMVCEngine := TMVCEngine.Create(self);
-  FMVCEngine.Config[TMVCConfigKey.DocumentRoot] := 'www';
-  FMVCEngine.Config[TMVCConfigKey.AllowUnhandledAction] := 'true';
+  FMVCEngine := TMVCEngine.Create(self,
+    procedure(Config: TMVCConfig)
+    begin
+      Config[TMVCConfigKey.AllowUnhandledAction] := 'true';
+    end);
   FMVCEngine.AddController(TControllerCustomer);
+  FMVCEngine.AddMiddleware(TMVCStaticFilesMiddleware.Create(
+    '/', { StaticFilesPath }
+    'www', { DocumentRoot }
+    'index.html' { IndexDocument - Before it was named fallbackresource },
+    False
+    ));
 end;
 
 procedure TwmSOAPREST.WebModuleDestroy(Sender: TObject);
@@ -49,7 +59,7 @@ begin
 end;
 
 procedure TwmSOAPREST.wmSOAPRESTSoapActionAction(Sender: TObject;
-  Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
+Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
 begin
   WSDLHTMLPublish.ServiceInfo(Sender, Request, Response, Handled);
 end;

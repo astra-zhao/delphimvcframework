@@ -2,7 +2,7 @@
 //
 // Delphi MVC Framework
 //
-// Copyright (c) 2010-2018 Daniele Teti and the DMVCFramework Team
+// Copyright (c) 2010-2020 Daniele Teti and the DMVCFramework Team
 //
 // https://github.com/danieleteti/delphimvcframework
 //
@@ -34,6 +34,7 @@ uses
   System.Rtti,
   System.TypInfo,
   Data.DB,
+  MVCFramework.Commons,
   MVCFramework.Serializer.Commons;
 
 type
@@ -49,7 +50,8 @@ type
     procedure SerializeRoot(
       const AObject: TObject;
       out ASerializerObject: TObject;
-      const AAttributes: TArray<TCustomAttribute>
+      const AAttributes: TArray<TCustomAttribute>;
+      const ASerializationAction: TMVCSerializationAction = nil
       );
 
     procedure DeserializeAttribute(
@@ -73,42 +75,74 @@ type
     function SerializeObject(
       const AObject: TObject;
       const AType: TMVCSerializationType = stDefault;
-      const AIgnoredAttributes: TMVCIgnoredList = [];
+      const AIgnoredAttributes: TMVCIgnoredList = nil;
       const ASerializationAction: TMVCSerializationAction = nil
-      ): string;
+      ): string; overload;
+
+    function SerializeObject(
+      const AObject: IInterface;
+      const AType: TMVCSerializationType = stDefault;
+      const AIgnoredAttributes: TMVCIgnoredList = nil;
+      const ASerializationAction: TMVCSerializationAction = nil
+      ): string; overload;
 
     function SerializeCollection(
       const AList: TObject;
       const AType: TMVCSerializationType = stDefault;
-      const AIgnoredAttributes: TMVCIgnoredList = []
-      ): string;
+      const AIgnoredAttributes: TMVCIgnoredList = nil;
+      const ASerializationAction: TMVCSerializationAction = nil
+      ): string; overload;
+
+    function SerializeCollection(
+      const AList: IInterface;
+      const AType: TMVCSerializationType = stDefault;
+      const AIgnoredAttributes: TMVCIgnoredList = nil;
+      const ASerializationAction: TMVCSerializationAction = nil
+      ): string; overload;
 
     function SerializeDataSet(
       const ADataSet: TDataSet;
       const AIgnoredFields: TMVCIgnoredList = [];
-      const ANameCase: TMVCNameCase = ncAsIs
+      const ANameCase: TMVCNameCase = ncAsIs;
+      const ASerializationAction: TMVCDatasetSerializationAction = nil
       ): string;
 
     function SerializeDataSetRecord(
       const ADataSet: TDataSet;
       const AIgnoredFields: TMVCIgnoredList = [];
-      const ANameCase: TMVCNameCase = ncAsIs
+      const ANameCase: TMVCNameCase = ncAsIs;
+      const ASerializationAction: TMVCDatasetSerializationAction = nil
       ): string;
 
     procedure DeserializeObject(
       const ASerializedObject: string;
       const AObject: TObject;
       const AType: TMVCSerializationType = stDefault;
-      const AIgnoredAttributes: TMVCIgnoredList = []
-      );
+      const AIgnoredAttributes: TMVCIgnoredList = nil
+      ); overload;
+
+    procedure DeserializeObject(
+      const ASerializedObject: string;
+      const AObject: IInterface;
+      const AType: TMVCSerializationType = stDefault;
+      const AIgnoredAttributes: TMVCIgnoredList = nil
+      ); overload;
 
     procedure DeserializeCollection(
       const ASerializedList: string;
       const AList: TObject;
       const AClazz: TClass;
       const AType: TMVCSerializationType = stDefault;
-      const AIgnoredAttributes: TMVCIgnoredList = []
-      );
+      const AIgnoredAttributes: TMVCIgnoredList = nil
+      ); overload;
+
+    procedure DeserializeCollection(
+      const ASerializedList: string;
+      const AList: IInterface;
+      const AClazz: TClass;
+      const AType: TMVCSerializationType = stDefault;
+      const AIgnoredAttributes: TMVCIgnoredList = nil
+      ); overload;
 
     procedure DeserializeDataSet(
       const ASerializedDataSet: string;

@@ -2,7 +2,7 @@
 //
 // Delphi MVC Framework
 //
-// Copyright (c) 2010-2018 Daniele Teti and the DMVCFramework Team
+// Copyright (c) 2010-2020 Daniele Teti and the DMVCFramework Team
 //
 // https://github.com/danieleteti/delphimvcframework
 //
@@ -35,7 +35,7 @@ uses
   System.DateUtils,
   System.Rtti,
   MVCFramework,
-  MVCFramework.Commons;
+  MVCFramework.Commons, MVCFramework.Swagger.Commons;
 
 type
 
@@ -49,17 +49,22 @@ type
     function GetUpTime: string;
   public
     [MVCPath('/describeserver.info')]
-    [MVCHTTPMethods([httpGET, httpPOST])]
+    [MVCHTTPMethods([httpGET])]
     [MVCDoc('Describe controllers and actions published by the RESTful server per resources')]
-    procedure DescribeServer(AContext: TWebContext);
+    [MVCSwagSummary('DMVCFramework System Controller', 'Describe controllers and actions published by the RESTful server per resources')]
+    procedure DescribeServer;
 
     [MVCPath('/describeplatform.info')]
     [MVCDoc('Describe the system where server is running')]
-    procedure DescribePlatform(AContext: TWebContext);
+    [MVCHTTPMethods([httpGET])]
+    [MVCSwagSummary('DMVCFramework System Controller', 'Describe the system where server is running')]
+    procedure DescribePlatform;
 
     [MVCPath('/serverconfig.info')]
+    [MVCHTTPMethods([httpGET])]
     [MVCDoc('Server configuration')]
-    procedure ServerConfig(AContext: TWebContext);
+    [MVCSwagSummary('DMVCFramework System Controller', 'Server configuration')]
+    procedure ServerConfig;
   end;
 
 implementation
@@ -93,7 +98,7 @@ end;
 
 { TMVCSystemController }
 
-procedure TMVCSystemController.DescribePlatform(AContext: TWebContext);
+procedure TMVCSystemController.DescribePlatform;
 var
   Jo: TJSONObject;
 begin
@@ -110,7 +115,7 @@ begin
   end;
 end;
 
-procedure TMVCSystemController.DescribeServer(AContext: TWebContext);
+procedure TMVCSystemController.DescribeServer;
 var
   LJoResp: TJSONObject;
   LController: TMVCControllerDelegate;
@@ -221,9 +226,13 @@ begin
   ClientIp := Context.Request.ClientIp;
   AHandled := not((ClientIp = '::1') or (ClientIp = '127.0.0.1') or (ClientIp = '0:0:0:0:0:0:0:1') or
     (ClientIp.ToLower = 'localhost'));
+  if AHandled then
+  begin
+    AContext.Response.StatusCode := HTTP_STATUS.Forbidden;
+  end;
 end;
 
-procedure TMVCSystemController.ServerConfig(AContext: TWebContext);
+procedure TMVCSystemController.ServerConfig;
 var
   Keys: TArray<string>;
   Key: string;

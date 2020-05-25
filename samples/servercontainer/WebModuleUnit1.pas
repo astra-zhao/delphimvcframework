@@ -26,15 +26,25 @@ implementation
 
 {$R *.dfm}
 
+
 uses
-  App1MainControllerU;
+  App1MainControllerU,
+  MVCFramework.Middleware.StaticFiles, MVCFramework.Commons;
 
 procedure TWebModule1.WebModuleCreate(Sender: TObject);
 begin
-  FMVCEngine := TMVCEngine.Create(Self);
-  FMVCEngine.Config['view_path'] := '..\Debug\HTML5Application';
-  FMVCEngine.Config['document_root'] := 'HTML5Application\public_html';
-  FMVCEngine.AddController(TApp1MainController);
+  FMVCEngine := TMVCEngine.Create(Self,
+    procedure(Config: TMVCConfig)
+    begin
+      Config['view_path'] := '..\Debug\HTML5Application';
+    end);
+  FMVCEngine.AddController(
+    TApp1MainController);
+  FMVCEngine.AddMiddleware(TMVCStaticFilesMiddleware.Create(
+    '/', { StaticFilesPath }
+    'HTML5Application\public_html', { DocumentRoot }
+    'index.html' { IndexDocument - Before it was named fallbackresource }
+    ));
 end;
 
 procedure TWebModule1.WebModuleDestroy(Sender: TObject);

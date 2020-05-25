@@ -27,17 +27,21 @@ implementation
 uses
   WineCellarAppControllerU,
   MVCFramework.Commons,
+  MVCFramework.Middleware.StaticFiles,
   System.IOUtils;
 
 {$R *.dfm}
+
 
 procedure Twm.WebModuleCreate(Sender: TObject);
 begin
   MVCEngine := TMVCEngine.Create(self);
   MVCEngine.AddController(TWineCellarApp);
-  MVCEngine.Config[TMVCConfigKey.DocumentRoot] := TPath.Combine(AppPath, '..\..\www');
-  MVCEngine.Config[TMVCConfigKey.IndexDocument] := 'index.html';
-  MVCEngine.Config[TMVCConfigKey.FallbackResource] := 'index.html';
+  MVCEngine.AddMiddleware(TMVCStaticFilesMiddleware.Create(
+    '/', { StaticFilesPath }
+    TPath.Combine(AppPath, '..\..\www'), { DocumentRoot }
+    'index.html' { IndexDocument - Before it was named fallbackresource }
+    ));
 end;
 
 end.

@@ -2,7 +2,7 @@
 //
 // Delphi MVC Framework
 //
-// Copyright (c) 2010-2018 Daniele Teti and the DMVCFramework Team
+// Copyright (c) 2010-2020 Daniele Teti and the DMVCFramework Team
 //
 // https://github.com/danieleteti/delphimvcframework
 //
@@ -30,7 +30,7 @@ interface
 uses
   MVCFramework,
   System.SysUtils,
-  MVCFramework.Commons;
+  MVCFramework.Commons, FireDAC.Comp.Client, Data.DB;
 
 type
 
@@ -38,8 +38,11 @@ type
   TTestServerController = class(TMVCController)
   private
     FFormatSettings: TFormatSettings;
+    fDataSet: TFDMemTable;
   protected
     procedure MVCControllerAfterCreate; override;
+    function GetDataSet: TDataSet;
+    procedure MVCControllerBeforeDestroy; override;
   public
     [MVCPath('/req/with/params/($par1)/($par2)/($par3)')]
     [MVCHTTPMethod([httpGET, httpDELETE])]
@@ -94,14 +97,18 @@ type
     [MVCPath('/testconsumes')]
     [MVCHTTPMethod([httpGET, httpPOST, httpPUT])]
     [MVCConsumes('text/plain')]
-    [MVCProduces('text/plain')]
+    [MVCProduces('text/plain', 'utf-8')]
     procedure TestConsumesProducesText;
 
-    [MVCPath('/testconsumejson')]
+    [MVCPath('/adapter/testconsumejson')]
     [MVCHTTPMethod([httpGET])]
     [MVCConsumes('application/json')]
     [MVCProduces('application/json', 'utf-8')]
     procedure TestConsumeJSON;
+
+    [MVCPath('/people/renderaction')]
+    [MVCHTTPMethod([httpGET])]
+    procedure TestGetPersonsHateos;
 
     [MVCPath('/people/($id)')]
     [MVCHTTPMethod([httpGET])]
@@ -127,6 +134,11 @@ type
     [MVCHTTPMethod([httpPOST, httpPUT])]
     [MVCProduces('application/json')]
     procedure TestPOSTObject;
+
+    [MVCPath('/customerecho')]
+    [MVCHTTPMethod([httpPOST])]
+    [MVCProduces('application/json')]
+    procedure TestCustomerEcho;
 
     [MVCPath('/speed')]
     [MVCHTTPMethod([httpGET])]
@@ -159,8 +171,8 @@ type
     procedure TestTypedActionExtended1(value: Extended);
 
     [MVCPath('/typed/all/($ParString)/($ParInteger)/($ParInt64)/($ParSingle)/($ParDouble)/($ParExtended)')]
-    procedure TestTypedActionAllTypes(ParString: string; ParInteger: Integer; ParInt64: Int64; ParSingle: Single; ParDouble: Double;
-      ParExtended: Extended);
+    procedure TestTypedActionAllTypes(ParString: string; ParInteger: Integer; ParInt64: Int64; ParSingle: Single;
+      ParDouble: Double; ParExtended: Extended);
 
     [MVCPath('/typed/tdatetime1/($value)')]
     procedure TestTypedActionTDateTime1(value: TDateTime);
@@ -170,6 +182,9 @@ type
 
     [MVCPath('/typed/ttime1/($value)')]
     procedure TestTypedActionTTime1(value: TTime);
+
+    [MVCPath('/typed/tguid1/($value)')]
+    procedure TestTypedActionTGuid1(value: TGUID);
 
     [MVCPath('/typed/booleans/($bool1)/($bool2)/($bool3)/($bool4)')]
     procedure TestTypedActionBooleans(bool1, bool2, bool3, bool4: Boolean);
@@ -182,6 +197,52 @@ type
 
     [MVCPath('/stringdictionary')]
     procedure TestStringDictionary;
+
+    [MVCPath('/image/png')]
+    [MVCHTTPMethod([httpGET])]
+    procedure TestGetImagePng;
+
+    [MVCPath('/objectdict')]
+    procedure TestObjectDict;
+
+    // Nullables Tests
+    [MVCHTTPMethod([httpPOST])]
+    [MVCPath('/nullables/pingpong')]
+    procedure TestDeserializeAndSerializeNullables;
+
+    [MVCHTTPMethod([httpGET])]
+    [MVCPath('/nullables/getsingle')]
+    procedure TestSerializeNullables;
+
+    [MVCHTTPMethod([httpGET])]
+    [MVCPath('/nullables/getsinglewithnulls')]
+    procedure TestSerializeNullablesWithNulls;
+
+    // Response Objects Tests
+    [MVCHTTPMethod([httpPOST])]
+    [MVCPath('/responses/created')]
+    procedure TestResponseCreated;
+
+    [MVCHTTPMethod([httpPOST])]
+    [MVCPath('/responses/accepted')]
+    procedure TestResponseAccepted;
+
+    [MVCHTTPMethod([httpGET])]
+    [MVCPath('/responses/nocontent')]
+    procedure TestResponseNoContent;
+
+    [MVCHTTPMethod([httpGET])]
+    [MVCPath('/($projectid)')]
+    procedure GetProject;
+
+    [MVCHTTPMethod([httpGET])]
+    [MVCPath('/($projectid)/pictures/($imageuuid)')]
+    procedure GetImage;
+
+    { templates }
+    [MVCHTTPMethod([httpGET])]
+    [MVCPath('/website/list')]
+    procedure Tmpl_ListOfDataUsingDatasets;
 
   end;
 
@@ -197,7 +258,7 @@ type
     procedure OnlyRole2;
   end;
 
-  [MVCPath('/fault')]
+  [MVCPath('/exception/fault')]
   TTestFaultController = class(TMVCController)
   public
     [MVCPath]
@@ -205,7 +266,7 @@ type
     constructor Create; override;
   end;
 
-  [MVCPath('/fault2')]
+  [MVCPath('/exception/fault2')]
   TTestFault2Controller = class(TTestFaultController)
   public
     [MVCPath]
@@ -216,6 +277,7 @@ type
 implementation
 
 uses
+  JsonDataObjects,
   System.JSON,
   Web.HTTPApp,
   BusinessObjectsU,
@@ -223,6 +285,7 @@ uses
   MVCFramework.Serializer.Commons,
   MVCFramework.Serializer.Defaults,
   MVCFramework.DuckTyping,
+  System.IOUtils,
   System.Classes;
 
 { TTestServerController }
@@ -300,6 +363,22 @@ begin
 
 end;
 
+function TTestServerController.GetDataSet: TDataSet;
+begin
+  Result := TFDMemTable.Create(nil);
+  TFDMemTable(Result).LoadFromFile(TPath.Combine(AppPath, 'customers.json'));
+end;
+
+procedure TTestServerController.GetImage;
+begin
+  // do nothing
+end;
+
+procedure TTestServerController.GetProject;
+begin
+  // do nothing
+end;
+
 procedure TTestServerController.Login;
 begin
   if Context.SessionStarted then
@@ -323,10 +402,17 @@ begin
   FFormatSettings.DecimalSeparator := '.';
 end;
 
+procedure TTestServerController.MVCControllerBeforeDestroy;
+begin
+  inherited;
+
+end;
+
 procedure TTestServerController.ReqWithParams;
 begin
-  Render(TJSONObject.Create.AddPair('par1', Context.Request.Params['par1']).AddPair('par2', Context.Request.Params['par2']).AddPair('par3',
-    Context.Request.Params['par3']).AddPair('method', Context.Request.HTTPMethodAsString));
+  Render(TJSONObject.Create.AddPair('par1', Context.Request.Params['par1']).AddPair('par2',
+    Context.Request.Params['par2']).AddPair('par3', Context.Request.Params['par3']).AddPair('method',
+    Context.Request.HTTPMethodAsString));
 end;
 
 procedure TTestServerController.SessionGet;
@@ -363,16 +449,51 @@ begin
   Render(Context.Request.Body);
 end;
 
+procedure TTestServerController.TestCustomerEcho;
+var
+  lCustomer: TCustomer;
+begin
+  lCustomer := Context.Request.BodyAs<TCustomer>();
+  // lCustomer.Logo.SaveToFile('pippo_server_before.bmp');
+  lCustomer.Name := lCustomer.Name + ' changed';
+{$IFNDEF LINUX}
+  lCustomer.Logo.Canvas.TextOut(10, 10, 'Changed');
+{$ENDIF}
+  // lCustomer.Logo.SaveToFile('pippo_server_after.bmp');
+  Render(lCustomer, True);
+end;
+
+procedure TTestServerController.TestDeserializeAndSerializeNullables;
+var
+  lNullablesTest: TNullablesTest;
+begin
+  lNullablesTest := Context.Request.BodyAs<TNullablesTest>;
+  Render(lNullablesTest);
+end;
+
 procedure TTestServerController.TestCharset;
 var
-  Obj: TJSONObject;
+  Obj: TJDOJSONObject;
 begin
   ContentType := BuildContentType(TMVCMediaType.APPLICATION_JSON, TMVCCharset.UTF_8);
-  Obj := TJSONObject.Create;
-  Obj.AddPair('name1', 'jørn');
-  Obj.AddPair('name2', 'Što je Unicode?');
-  Obj.AddPair('name3', 'àèéìòù');
-  Render(Obj);
+  Obj := TJDOJSONObject.Create;
+  try
+    Obj.s['name1'] := 'jørn';
+    Obj.s['name2'] := 'Što je Unicode?';
+    Obj.s['name3'] := 'àèéìòù';
+    Render(Obj, false);
+  finally
+    Obj.Free;
+  end;
+end;
+
+procedure TTestServerController.TestGetImagePng;
+var
+  lFName: string;
+begin
+  ContentType := TMVCMediaType.IMAGE_PNG;
+  lFName := TPath.Combine(AppPath, 'sample.png');
+  Render(TFile.OpenRead(lFName));
 end;
 
 procedure TTestServerController.TestGetPersonByID;
@@ -422,6 +543,22 @@ begin
 
 end;
 
+procedure TTestServerController.TestGetPersonsHateos;
+begin
+  Render<TPerson>(TPerson.GetList, True,
+    procedure(const Person: TPerson; const Links: IMVCLinks)
+    begin
+      Links.AddRefLink
+        .Add(HATEOAS.HREF, '/api/people/' + Person.ID.ToString)
+        .Add(HATEOAS.REL, 'test0')
+        .Add(HATEOAS._TYPE, 'application/json');
+      Links.AddRefLink
+        .Add(HATEOAS.HREF, '/api/test/' + Person.ID.ToString)
+        .Add(HATEOAS.REL, 'test1')
+        .Add(HATEOAS._TYPE, 'application/json')
+    end);
+end;
+
 procedure TTestServerController.TestGetWrappedPeople;
 var
   LWrappedList: IWrappedList;
@@ -451,17 +588,17 @@ end;
 
 procedure TTestServerController.TestJSONArrayAsObjectList;
 var
-  vUsers: TObjectList<TCustomer>;
+  lUsers: TObjectList<TCustomer>;
 begin
-  vUsers := Context.Request.BodyAsListOf<TCustomer>();
+  lUsers := Context.Request.BodyAsListOf<TCustomer>();
   try
-    vUsers.OwnsObjects := True;
-    if (vUsers.Count = 3000) then
+    lUsers.OwnsObjects := True;
+    if (lUsers.Count = 3000) then
       Render('Success!')
     else
       Render('Error!');
   finally
-    FreeAndNil(vUsers);
+    FreeAndNil(lUsers);
   end;
 end;
 
@@ -469,6 +606,23 @@ procedure TTestServerController.TestMultiplePaths;
 begin
   ContentType := TMVCMediaType.TEXT_PLAIN;
   Render(Context.Request.Params['id']);
+end;
+
+procedure TTestServerController.TestObjectDict;
+var
+  lDict: IMVCObjectDictionary;
+begin
+  lDict := ObjectDict(True)
+    .Add('ncUpperCase_List', GetDataSet, nil, dstAllRecords, ncUpperCase)
+    .Add('ncLowerCase_List', GetDataSet, nil, dstAllRecords, ncLowerCase)
+    .Add('ncCamelCase_List', GetDataSet, nil, dstAllRecords, ncCamelCase)
+    .Add('ncPascalCase_List', GetDataSet, nil, dstAllRecords, ncPascalCase)
+    .Add('ncUpperCase_Single', GetDataSet, nil, dstSingleRecord, ncUpperCase)
+    .Add('ncLowerCase_Single', GetDataSet, nil, dstSingleRecord, ncLowerCase)
+    .Add('ncCamelCase_Single', GetDataSet, nil, dstSingleRecord, ncCamelCase)
+    .Add('ncPascalCase_Single', GetDataSet, nil, dstSingleRecord, ncPascalCase)
+    .Add('meta', StrDict(['page'], ['1']));
+  Render(lDict);
 end;
 
 procedure TTestServerController.TestPOSTObject;
@@ -499,6 +653,38 @@ begin
   Render(LStream, True);
 end;
 
+procedure TTestServerController.TestResponseAccepted;
+begin
+  Render202Accepted('http://pippo.it/1234', '1234', 'thisisthereason');
+end;
+
+procedure TTestServerController.TestResponseCreated;
+begin
+  Render201Created('thisisthelocation', 'thisisthereason');
+end;
+
+procedure TTestServerController.TestResponseNoContent;
+begin
+  Render204NoContent('thisisthereason');
+end;
+
+procedure TTestServerController.TestSerializeNullables;
+var
+  lObj: TNullablesTest;
+begin
+  lObj := TNullablesTest.Create();
+  lObj.LoadSomeData;
+  Render(lObj);
+end;
+
+procedure TTestServerController.TestSerializeNullablesWithNulls;
+var
+  lObj: TNullablesTest;
+begin
+  lObj := TNullablesTest.Create();
+  Render(lObj);
+end;
+
 procedure TTestServerController.TestStringDictionary;
 var
   lDict: TMVCStringDictionary;
@@ -512,8 +698,8 @@ begin
   end;
 end;
 
-procedure TTestServerController.TestTypedActionAllTypes(ParString: string; ParInteger: Integer; ParInt64: Int64; ParSingle: Single;
-  ParDouble: Double; ParExtended: Extended);
+procedure TTestServerController.TestTypedActionAllTypes(ParString: string; ParInteger: Integer; ParInt64: Int64;
+ParSingle: Single; ParDouble: Double; ParExtended: Extended);
 var
   lJObj: TJSONObject;
 begin
@@ -560,7 +746,7 @@ end;
 procedure TTestServerController.TestTypedActionString1(value: string);
 begin
   ContentType := TMVCMediaType.TEXT_PLAIN;
-  Render(value + ' modified from server');
+  Render('*' + value + '*');
 end;
 
 procedure TTestServerController.TestTypedActionTDate1(value: TDate);
@@ -575,16 +761,40 @@ begin
   Render(DateTimeToISOTimeStamp(value) + ' modified from server');
 end;
 
+procedure TTestServerController.TestTypedActionTGuid1(value: TGUID);
+begin
+  ContentType := TMVCMediaType.TEXT_PLAIN;
+  Render(GuidToString(value) + ' modified from server');
+end;
+
 procedure TTestServerController.TestTypedActionBooleans(bool1, bool2, bool3, bool4: Boolean);
 begin
   ContentType := TMVCMediaType.TEXT_PLAIN;
-  Render(Format('%s.%s.%s.%s', [BoolToStr(bool1, True), BoolToStr(bool2, True), BoolToStr(bool3, True), BoolToStr(bool4, True)]));
+  Render(Format('%s.%s.%s.%s', [BoolToStr(bool1, True), BoolToStr(bool2, True), BoolToStr(bool3, True),
+    BoolToStr(bool4, True)]));
 end;
 
 procedure TTestServerController.TestTypedActionTTime1(value: TTime);
 begin
   ContentType := TMVCMediaType.TEXT_PLAIN;
   Render(TimeToISOTime(value) + ' modified from server');
+end;
+
+procedure TTestServerController.Tmpl_ListOfDataUsingDatasets;
+var
+  lDS: TFDMemTable;
+begin
+  lDS := TFDMemTable.Create(nil);
+  try
+    var lFName: string := TPath.Combine(AppPath, 'customers.json');
+    lDS.LoadFromFile(lFName);
+    ViewDataset['customers'] := lDS;
+    ViewData['customers2'] := lDS;
+    LoadView(['dataset_list']);
+    RenderResponseStream;
+  finally
+    lDS.Free;
+  end;
 end;
 
 { TTestPrivateServerController }

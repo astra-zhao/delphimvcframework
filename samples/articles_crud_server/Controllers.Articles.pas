@@ -2,7 +2,11 @@ unit Controllers.Articles;
 
 interface
 
-uses mvcframework, mvcframework.Commons, Controllers.Base;
+uses
+  mvcframework,
+  mvcframework.Commons,
+  mvcframework.Serializer.Commons,
+  Controllers.Base;
 
 type
 
@@ -14,6 +18,11 @@ type
     [MVCPath]
     [MVCHTTPMethod([httpGET])]
     procedure GetArticles;
+
+    [MVCDoc('Returns the list of articles')]
+    [MVCPath('/searches')]
+    [MVCHTTPMethod([httpGET])]
+    procedure GetArticlesByDescription;
 
     [MVCDoc('Returns the article with the specified id')]
     [MVCPath('/($id)')]
@@ -33,35 +42,39 @@ type
     [MVCDoc('Creates a new article and returns "201: Created"')]
     [MVCPath]
     [MVCHTTPMethod([httpPOST])]
-    procedure CreateArticle(Context: TWebContext);
+    procedure CreateArticle;
 
     [MVCDoc('Creates new articles from a list and returns "201: Created"')]
     [MVCPath('/bulk')]
     [MVCHTTPMethod([httpPOST])]
-    procedure CreateArticles(Context: TWebContext);
+    procedure CreateArticles;
   end;
 
 implementation
 
 { TArticlesController }
 
-uses Services, BusinessObjects, Commons, mvcframework.Serializer.Intf,
-  System.Generics.Collections;
+uses
+  Services,
+  BusinessObjects,
+  Commons,
+  mvcframework.Serializer.Intf,
+  System.Generics.Collections, System.SysUtils;
 
-procedure TArticlesController.CreateArticle(Context: TWebContext);
+procedure TArticlesController.CreateArticle;
 var
   Article: TArticle;
 begin
   Article := Context.Request.BodyAs<TArticle>;
   try
     GetArticlesService.Add(Article);
-    Render(201, 'Article Created');
+    Render201Created('/articles/' + Article.id.ToString, 'Article Created');
   finally
     Article.Free;
   end;
 end;
 
-procedure TArticlesController.CreateArticles(Context: TWebContext);
+procedure TArticlesController.CreateArticles;
 var
   lArticles: TObjectList<TArticle>;
   lArticle: TArticle;
@@ -99,7 +112,35 @@ end;
 
 procedure TArticlesController.GetArticles;
 begin
-  Render<TArticle>(GetArticlesService.GetAll);
+  Render(
+    ObjectDict().Add('data', GetArticlesService.GetAll)
+    );
+end;
+
+procedure TArticlesController.GetArticlesByDescription;
+var
+  lSearch: string;
+  lDict: IMVCObjectDictionary;
+begin
+  try
+    lSearch := Context.Request.Params['q'];
+    if lSearch = '' then
+    begin
+      lDict := ObjectDict().Add('data', GetArticlesService.GetAll);
+    end
+    else
+    begin
+      lDict := ObjectDict().Add('data', GetArticlesService.GetArticles(lSearch));
+    end;
+    Render(lDict);
+  except
+    on E: EServiceException do
+    begin
+      raise EMVCException.Create(E.Message, '', 0, 404);
+    end
+    else
+      raise;
+  end;
 end;
 
 procedure TArticlesController.UpdateArticleByID(id: Integer);
@@ -117,12 +158,9 @@ begin
 end;
 
 procedure TArticlesController.GetArticleByID(id: Integer);
-var
-  Article: TArticle;
 begin
   try
-    Article := GetArticlesService.GetByID(id);
-    Render(Article);
+    Render(ObjectDict().Add('data', GetArticlesService.GetByID(id)));
   except
     on E: EServiceException do
     begin

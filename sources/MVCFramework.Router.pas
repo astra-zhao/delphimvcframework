@@ -2,7 +2,7 @@
 //
 // Delphi MVC Framework
 //
-// Copyright (c) 2010-2018 Daniele Teti and the DMVCFramework Team
+// Copyright (c) 2010-2020 Daniele Teti and the DMVCFramework Team
 //
 // https://github.com/danieleteti/delphimvcframework
 //
@@ -35,13 +35,6 @@ uses
   System.SysUtils,
   System.Generics.Collections,
   System.RegularExpressions,
-
-  {$IFNDEF LINUX}
-
-  System.AnsiStrings,
-
-  {$ENDIF}
-
   MVCFramework,
   MVCFramework.Commons,
   IdURI;
@@ -58,7 +51,7 @@ type
     function Params: TList<string>; // this should be read-only...
   end;
 
-  TMVCRouter = class
+  TMVCRouter = class(TMVCCustomRouter)
   private
     FRttiContext: TRttiContext;
     FConfig: TMVCConfig;
@@ -94,10 +87,8 @@ type
       const aControllerAttributes: TArray<TCustomAttribute>): string;
   public
     class function StringMethodToHTTPMetod(const AValue: string): TMVCHTTPMethodType; static;
-  public
     constructor Create(const aConfig: TMVCConfig; const aActionParamsCache: TMVCStringObjectDictionary<TMVCActionParamCacheItem>);
     destructor Destroy; override;
-
     function ExecuteRouting(
       const ARequestPathInfo: string;
       const ARequestMethodType: TMVCHTTPMethodType;
@@ -109,6 +100,7 @@ type
       var ARequestParams: TMVCRequestParamsTable;
       out AResponseContentMediaType: string;
       out AResponseContentCharset: string): Boolean;
+    function GetQualifiedActionName: string; override;
 
     property MethodToCall: TRttiMethod read FMethodToCall;
     property ControllerClazz: TMVCControllerClazz read FControllerClazz;
@@ -177,8 +169,10 @@ begin
     LRequestPathInfo := '/'
   else
   begin
-    if LRequestPathInfo[1] <> '/' then
+    if not LRequestPathInfo.StartsWith('/') then
+    begin
       LRequestPathInfo := '/' + LRequestPathInfo;
+    end;
   end;
   LRequestPathInfo := TIdURI.PathEncode(LRequestPathInfo);
 
@@ -193,7 +187,7 @@ begin
   end;
   { CHANGE THE REQUEST PATH INFO END }
 
-  TMonitor.Enter(Lock);
+  TMonitor.Enter(gLock);
   try
     LControllerMappedPath := EmptyStr;
     for LControllerDelegate in AControllers do
@@ -215,13 +209,16 @@ begin
       end;
 
       if (LControllerMappedPath = '/') then
+      begin
         LControllerMappedPath := '';
+      end;
 
-      if (not LControllerMappedPath.IsEmpty) and (Pos(LControllerMappedPath, LRequestPathInfo) <> 1) then
+      if not LRequestPathInfo.StartsWith(LControllerMappedPath, True) then
+      begin
         Continue;
+      end;
 
-
-      LMethods := LRttiType.GetMethods; {do not use GetDeclaredMethods because JSONRPC rely on this!!}
+      LMethods := LRttiType.GetMethods; {do not use GetDeclaredMethods because JSON-RPC rely on this!!}
       for LMethod in LMethods do
       begin
         if (LMethod.MethodKind <> mkProcedure) or LMethod.IsClassMethod then
@@ -229,7 +226,9 @@ begin
 
         LAttributes := LMethod.GetAttributes;
         for LAtt in LAttributes do
+        begin
           if LAtt is MVCPathAttribute then
+          begin
             if IsHTTPMethodCompatible(ARequestMethodType, LAttributes) and
               IsHTTPContentTypeCompatible(ARequestMethodType, LRequestContentType, LAttributes) and
               IsHTTPAcceptCompatible(ARequestMethodType, LRequestAccept, LAttributes) then
@@ -254,11 +253,12 @@ begin
                 Exit(True);
               end;
             end;
-      end;
-
-    end;
+          end; //if MVCPathAttribute
+        end; //for in Attributes
+      end; //for in Methods
+    end; //for in Controllers
   finally
-    TMonitor.Exit(Lock);
+    TMonitor.Exit(gLock);
   end;
 end;
 
@@ -341,8 +341,12 @@ begin
     lMatch := lRegEx.match(APath);
     Result := lMatch.Success;
     if Result then
+    begin
       for I := 1 to pred(lMatch.Groups.Count) do
+      begin
         AParams.Add(lCacheItem.Params[I - 1], TIdURI.URLDecode(lMatch.Groups[I].Value));
+      end;
+    end;
   end;
 end;
 
@@ -363,7 +367,7 @@ begin
       for I := 0 to M.Groups.Count - 1 do
       begin
         S := M.Groups[I].Value;
-        if (Length(S) > 0) and (S[1] <> '(') then
+        if (Length(S) > 0) and (S.Chars[0] <> '(') then
         begin
           lList.Add(S);
           Break;
@@ -377,6 +381,11 @@ begin
   end;
 end;
 
+function TMVCRouter.GetQualifiedActionName: string;
+begin
+  Result := Self.FControllerClazz.QualifiedClassName + '.' + Self.MethodToCall.Name;
+end;
+
 function TMVCRouter.IsHTTPAcceptCompatible(
   const ARequestMethodType: TMVCHTTPMethodType;
   var AAccept: string;
@@ -387,6 +396,10 @@ var
   FoundOneAttProduces: Boolean;
 begin
   Result := False;
+  if AAccept = '*/*' then
+  begin
+    Exit(True);
+  end;
 
   FoundOneAttProduces := False;
   for I := 0 to high(AAttributes) do
@@ -502,3 +515,4 @@ begin
 end;
 
 end.
+

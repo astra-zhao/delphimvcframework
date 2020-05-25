@@ -2,6 +2,10 @@ unit LoggerPro.FileAppender;
 { <@abstract(The unit to include if you want to use @link(TLoggerProFileAppender))
   @author(Daniele Teti) }
 
+{$IF Defined(Android) or Defined(iOS)}
+{$DEFINE MOBILE}
+{$ENDIF}
+
 interface
 
 uses
@@ -82,7 +86,7 @@ type
       @item LogTag
       )
     }
-    DEFAULT_FILENAME_FORMAT = '%0:s.%1:2.2d.%2:s.log';
+    DEFAULT_FILENAME_FORMAT = '%s.%2.2d.%s.log';
     { @abstract(Defines number of log file set to mantain during logs rotation) }
     DEFAULT_MAX_BACKUP_FILE_COUNT = 5;
     { @abstract(Defines the max size of each log file)
@@ -108,8 +112,9 @@ uses
   System.IOUtils,
   idGlobal
 {$IF Defined(Android)}
-    ,
-  Androidapi.Helpers
+    ,Androidapi.Helpers
+    ,Androidapi.JNI.GraphicsContentViewText
+    ,Androidapi.JNI.JavaTypes
 {$ENDIF}
     ;
 
@@ -125,10 +130,10 @@ begin
 {$IF Defined(Android)}
   lModuleName := TAndroidHelper.ApplicationTitle.Replace(' ', '_', [rfReplaceAll]);
 {$ENDIF}
-{$IF Defined(MSWindows)}
+{$IF not Defined(Mobile)}
   lModuleName := TPath.GetFileNameWithoutExtension(GetModuleName(HInstance));
 {$ENDIF}
-{$IF Defined(IOS) or Defined(MacOS)}
+{$IF Defined(IOS)}
   raise Exception.Create('Platform not supported');
 {$ENDIF}
   lFormat := fLogFileNameFormat;
@@ -145,7 +150,7 @@ procedure TLoggerProFileAppender.Setup;
 begin
   if fLogsFolder = '' then
   begin
-{$IF Defined(MSWINDOWS)}
+{$IF (Defined(MSWINDOWS) or Defined(POSIX)) and (not Defined(MOBILE))}
     fLogsFolder := TPath.GetDirectoryName(GetModuleName(HInstance));
 {$ENDIF}
 {$IF Defined(Android) or Defined(IOS)}
@@ -325,3 +330,4 @@ begin
 end;
 
 end.
+

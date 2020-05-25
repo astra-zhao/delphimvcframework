@@ -93,7 +93,7 @@ type
     property OnNetSendError: TOnNetSendError read FOnNetSendError write SetOnNetSendError;
     property Topic: string read GetTopic write SetTopic;
     procedure TearDown; override;
-    procedure Setup;
+    procedure Setup; override;
     procedure WriteLog(const aLogItem: TLogItem); override;
     function CreateData(const SrcLogItem: TLogItem): TStream; virtual;
     function FormatLog(const aLogItem: TLogItem): string; virtual;
@@ -215,8 +215,10 @@ begin
       repeat
         try
           // Set very short timeouts: this is a local call and we don't want to block the queue for too long.
+{$IF CompilerVersion >= 31}
           FHTTPCli.ConnectionTimeout := 100;
           FHTTPCli.ResponseTimeout := 200;
+{$ENDIF}
           Data.Seek(0, soFromBeginning);
           // ignore the respnse: as long as NSQD has accepted the POST, it will handle the result
           FHTTPCli.Post(URI, Data);

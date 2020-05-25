@@ -2,7 +2,7 @@
 //
 // Delphi MVC Framework
 //
-// Copyright (c) 2010-2018 Daniele Teti and the DMVCFramework Team
+// Copyright (c) 2010-2020 Daniele Teti and the DMVCFramework Team
 //
 // https://github.com/danieleteti/delphimvcframework
 //
@@ -32,6 +32,8 @@ unit DMVC.Expert.CodeGen.Templates;
 
 interface
 
+{$I dmvcframework.inc}
+
 resourcestring
 
   { Delphi template code }
@@ -40,36 +42,44 @@ resourcestring
   sDMVCDPR =
     'program %0:s;' + sLineBreak +
     sLineBreak +
-    ' {$APPTYPE CONSOLE}' + sLineBreak +
-    '' + sLineBreak +
+    '{$APPTYPE CONSOLE}' + sLineBreak +
+    sLineBreak +
     'uses' + sLineBreak +
     '  System.SysUtils,' + sLineBreak +
     '  MVCFramework.Logger,' + sLineBreak +
     '  MVCFramework.Commons,' + sLineBreak +
     '  MVCFramework.REPLCommandsHandlerU,' + sLineBreak +
-    '  Web.ReqMulti, {If you have problem with this unit, see https://quality.embarcadero.com/browse/RSP-17216}' + sLineBreak +
+    {$IF Defined(SeattleOrBetter)}
+    '  Web.ReqMulti, //If you have problem with this unit, see https://quality.embarcadero.com/browse/RSP-17216' + sLineBreak +
     '  Web.WebReq,' + sLineBreak +
     '  Web.WebBroker,' + sLineBreak +
+    {$ELSE}
+    '  ReqMulti, //If you have problem with this unit, see https://quality.embarcadero.com/browse/RSP-17216' + sLineBreak +
+    '  WebReq,' + sLineBreak +
+    '  WebBroker,' + sLineBreak +
+    {$ENDIF}
+    '  IdContext,' + sLineBreak +
     '  IdHTTPWebBrokerBridge;' + sLineBreak +
-    '' + sLineBreak +
-    '{$R *.res}' + sLineBreak + sLineBreak +
+    sLineBreak +
+    '{$R *.res}' + sLineBreak +
+    sLineBreak +
+    sLineBreak +
     'procedure RunServer(APort: Integer);' + sLineBreak +
     'var' + sLineBreak +
-    '  lServer: TIdHTTPWebBrokerBridge;' + sLineBreak +
-    '  lCustomHandler: TMVCCustomREPLCommandsHandler;' + sLineBreak +
-    '  lCmd: string;' + sLineBreak +
+    '  LServer: TIdHTTPWebBrokerBridge;' + sLineBreak +
+    '  LCustomHandler: TMVCCustomREPLCommandsHandler;' + sLineBreak +
+    '  LCmd: string;' + sLineBreak +
     'begin' + sLineBreak +
     '  Writeln(''** DMVCFramework Server ** build '' + DMVCFRAMEWORK_VERSION);' + sLineBreak +
+    '  LCmd := ''start'';' + sLineBreak +
     '  if ParamCount >= 1 then' + sLineBreak +
-    '    lCmd := ParamStr(1)' + sLineBreak +
-    '  else' + sLineBreak +
-    '    lCmd := ''start'';' + sLineBreak +
-    '' + sLineBreak +
-    '  lCustomHandler := function(const Value: String; const Server: TIdHTTPWebBrokerBridge; out Handled: Boolean): THandleCommandResult' + sLineBreak +
+    '    LCmd := ParamStr(1);' + sLineBreak +
+    sLineBreak +
+    '  LCustomHandler := function(const Value: String; const Server: TIdHTTPWebBrokerBridge; out Handled: Boolean): THandleCommandResult' + sLineBreak +
     '    begin' + sLineBreak +
     '      Handled := False;' + sLineBreak +
     '      Result := THandleCommandResult.Unknown;' + sLineBreak +
-    '' + sLineBreak +
+    sLineBreak +
     '      // Write here your custom command for the REPL using the following form...' + sLineBreak +
     '      // ***' + sLineBreak +
     '      // Handled := False;' + sLineBreak +
@@ -86,28 +96,31 @@ resourcestring
     '      // Handled := True;' + sLineBreak +
     '      // end;' + sLineBreak +
     '    end;' + sLineBreak +
-    '' + sLineBreak +
+    sLineBreak +
     '  LServer := TIdHTTPWebBrokerBridge.Create(nil);' + sLineBreak +
     '  try' + sLineBreak +
+    '    LServer.OnParseAuthentication := TMVCParseAuthentication.OnParseAuthentication;' + sLineBreak +
     '    LServer.DefaultPort := APort;' + sLineBreak +
-    '' + sLineBreak +
+    sLineBreak +
     '    { more info about MaxConnections' + sLineBreak +
     '      http://www.indyproject.org/docsite/html/frames.html?frmname=topic&frmfile=TIdCustomTCPServer_MaxConnections.html }' + sLineBreak +
     '    LServer.MaxConnections := 0;' + sLineBreak +
-    '' + sLineBreak +
+    sLineBreak +
     '    { more info about ListenQueue' + sLineBreak +
     '      http://www.indyproject.org/docsite/html/frames.html?frmname=topic&frmfile=TIdCustomTCPServer_ListenQueue.html }' + sLineBreak +
     '    LServer.ListenQueue := 200;' + sLineBreak +
-    '' + sLineBreak +
+	'    {required if you use JWT middleware }' + sLineBreak +
+    '    LServer.OnParseAuthentication := TMVCParseAuthentication.OnParseAuthentication;' + sLineBreak +
+    sLineBreak +
     '    WriteLn(''Write "quit" or "exit" to shutdown the server'');' + sLineBreak +
     '    repeat' + sLineBreak +
-    '      if lCmd.IsEmpty then' + sLineBreak +
+    '      if LCmd.IsEmpty then' + sLineBreak +
     '      begin' + sLineBreak +
     '        Write(''-> '');' + sLineBreak +
-    '        ReadLn(lCmd)' + sLineBreak +
+    '        ReadLn(LCmd)' + sLineBreak +
     '      end;' + sLineBreak +
     '      try' + sLineBreak +
-    '        case HandleCommand(lCmd.ToLower, LServer, lCustomHandler) of' + sLineBreak +
+    '        case HandleCommand(LCmd.ToLower, LServer, LCustomHandler) of' + sLineBreak +
     '          THandleCommandResult.Continue:' + sLineBreak +
     '            begin' + sLineBreak +
     '              Continue;' + sLineBreak +
@@ -118,18 +131,17 @@ resourcestring
     '            end;' + sLineBreak +
     '          THandleCommandResult.Unknown:' + sLineBreak +
     '            begin' + sLineBreak +
-    '              REPLEmit(''Unknown command: '' + lCmd);' + sLineBreak +
+    '              REPLEmit(''Unknown command: '' + LCmd);' + sLineBreak +
     '            end;' + sLineBreak +
     '        end;' + sLineBreak +
     '      finally' + sLineBreak +
-    '        lCmd := '''';' + sLineBreak +
+    '        LCmd := '''';' + sLineBreak +
     '      end;' + sLineBreak +
-    '    until false;' + sLineBreak +
+    '    until False;' + sLineBreak +
     '' + sLineBreak +
     '  finally' + sLineBreak +
     '    LServer.Free;' + sLineBreak +
     '  end;' + sLineBreak +
-
     'end;' + sLineBreak +
     sLineBreak +
     'begin' + sLineBreak +
@@ -157,7 +169,7 @@ resourcestring
     'interface' + sLineBreak +
     sLineBreak +
     'uses' + sLineBreak +
-    '  MVCFramework, MVCFramework.Commons;' + sLineBreak +
+    '  MVCFramework, MVCFramework.Commons, MVCFramework.Serializer.Commons;' + sLineBreak +
     sLineBreak +
     'type' + sLineBreak +
     sLineBreak +
@@ -180,7 +192,7 @@ resourcestring
     'end.' + sLineBreak;
 
   sIndexMethodIntf =
-    '    [MVCPath(''/'')]' + sLineBreak +
+    '    [MVCPath]' + sLineBreak +
     '    [MVCHTTPMethod([httpGET])]' + sLineBreak +
     '    procedure Index;' + sLineBreak + sLineBreak +
     '    [MVCPath(''/reversedstrings/($Value)'')]' + sLineBreak +
@@ -278,10 +290,11 @@ resourcestring
     '' + sLineBreak +
     'interface' + sLineBreak +
     sLineBreak +
-    'uses System.SysUtils,' + sLineBreak +
-    '     System.Classes,' + sLineBreak +
-    '     Web.HTTPApp,' + sLineBreak +
-    '     MVCFramework;' + sLineBreak +
+    'uses ' + sLineBreak + 
+	'  System.SysUtils,' + sLineBreak +
+    '  System.Classes,' + sLineBreak +
+    '  Web.HTTPApp,' + sLineBreak +
+    '  MVCFramework;' + sLineBreak +
     sLineBreak +
     'type' + sLineBreak +
     '  %1:s = class(TWebModule)' + sLineBreak +
@@ -300,16 +313,21 @@ resourcestring
     sLineBreak +
     '{$R *.dfm}' + sLineBreak +
     sLineBreak +
-    'uses %2:s, System.IOUtils, MVCFramework.Commons, MVCFramework.Middleware.Compression;' + sLineBreak +
+    'uses ' + sLineBreak +
+	'  %2:s, ' + sLineBreak +
+	'  System.IOUtils, ' + sLineBreak +
+    '  MVCFramework.Commons, ' + sLineBreak +
+	'  MVCFramework.Middleware.StaticFiles, ' + sLineBreak +
+	'  MVCFramework.Middleware.Compression;' + sLineBreak +
     sLineBreak +
     'procedure %1:s.WebModuleCreate(Sender: TObject);' + sLineBreak +
     'begin' + sLineBreak +
     '  FMVC := TMVCEngine.Create(Self,' + sLineBreak +
     '    procedure(Config: TMVCConfig)' + sLineBreak +
     '    begin' + sLineBreak +
-    '      //enable static files' + sLineBreak +
-		'      Config[TMVCConfigKey.DocumentRoot] := TPath.Combine(ExtractFilePath(GetModuleName(HInstance)), ''www'');'
-    + sLineBreak +
+//  '      //enable static files' + sLineBreak +
+// 	'      Config[TMVCConfigKey.DocumentRoot] := TPath.Combine(ExtractFilePath(GetModuleName(HInstance)), ''www'');'
+//    + sLineBreak +
     '      // session timeout (0 means session cookie)' + sLineBreak +
     '      Config[TMVCConfigKey.SessionTimeout] := ''0'';' + sLineBreak +
     '      //default content-type' + sLineBreak +
@@ -320,6 +338,8 @@ resourcestring
     sLineBreak +
     '      //unhandled actions are permitted?' + sLineBreak +
     '      Config[TMVCConfigKey.AllowUnhandledAction] := ''false'';' + sLineBreak +
+    '      //enables or not system controllers loading (available only from localhost requests)' + sLineBreak +
+    '      Config[TMVCConfigKey.LoadSystemControllers] := ''true'';' + sLineBreak +
     '      //default view file extension' + sLineBreak +
     '      Config[TMVCConfigKey.DefaultViewFileExtension] := ''html'';' + sLineBreak +
     '      //view path' + sLineBreak +
@@ -328,12 +348,19 @@ resourcestring
     '      Config[TMVCConfigKey.MaxEntitiesRecordCount] := ''20'';' + sLineBreak +   
 	'      //Enable Server Signature in response' + sLineBreak +
     '      Config[TMVCConfigKey.ExposeServerSignature] := ''true'';' + sLineBreak +
-    '      // Define a default URL for requests that don''t map to a route or a file (useful for client side web app)' + sLineBreak +
-    '      Config[TMVCConfigKey.FallbackResource] := ''index.html'';' + sLineBreak +
+//    '      // Define a default URL for requests that don''t map to a route or a file (useful for client side web app)' + sLineBreak +
+//    '      Config[TMVCConfigKey.FallbackResource] := ''index.html'';' + sLineBreak +
     '      // Max request size in bytes' + sLineBreak +
     '      Config[TMVCConfigKey.MaxRequestSize] := IntToStr(TMVCConstants.DEFAULT_MAX_REQUEST_SIZE);' + sLineBreak +	
     '    end);' + sLineBreak +
-    '  FMVC.AddController(%3:s);' + sLineBreak +
+    '  FMVC.AddController(%3:s);' + sLineBreak + sLineBreak +
+    '  // Required to enable serving of static files ' + sLineBreak +
+    '  // Remove the following middleware declaration if you don''t  ' + sLineBreak +
+    '  // serve static files from this dmvcframework service.' + sLineBreak +	
+    '  FMVC.AddMiddleware(TMVCStaticFilesMiddleware.Create( ' + sLineBreak +
+    '      ''/static'', ' + sLineBreak +
+    '      TPath.Combine(ExtractFilePath(GetModuleName(HInstance)), ''www'')) ' + sLineBreak +
+    '    );	' + sLineBreak + sLineBreak +
     '  // To enable compression (deflate, gzip) just add this middleware as the last one ' + sLineBreak +
     '  FMVC.AddMiddleware(TMVCCompressionMiddleware.Create);' + sLineBreak +
     'end;' + sLineBreak +

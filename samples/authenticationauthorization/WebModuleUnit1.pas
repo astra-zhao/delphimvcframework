@@ -2,7 +2,8 @@ unit WebModuleUnit1;
 
 interface
 
-uses System.SysUtils,
+uses
+  System.SysUtils,
   System.Classes,
   Web.HTTPApp,
   MVCFramework,
@@ -27,21 +28,29 @@ implementation
 {$R *.dfm}
 
 
-uses AppControllerU, System.Generics.Collections,
-  MVCFramework.Middleware.Authentication, AuthenticationU;
+uses
+  AppControllerU,
+  System.Generics.Collections,
+  MVCFramework.Middleware.Authentication,
+  MVCFramework.Middleware.StaticFiles,
+  AuthenticationU;
 
 procedure TWebModule1.WebModuleCreate(Sender: TObject);
 begin
-  MVC := TMVCEngine.Create(Self);
-  MVC.Config[TMVCConfigKey.DocumentRoot] := '..\..\www';
-  MVC.Config[TMVCConfigKey.SessionTimeout] := '30';
-  MVC.Config[TMVCConfigKey.DefaultContentType] := 'text/html';
+  MVC := TMVCEngine.Create(Self,
+    procedure(Config: TMVCConfig)
+    begin
+      Config[TMVCConfigKey.SessionTimeout] := '30';
+      Config[TMVCConfigKey.DefaultContentType] := 'text/html';
+    end);
   MVC
     .AddController(TApp1MainController)
     .AddController(TAdminController)
-    .AddMiddleware(
-    TMVCBasicAuthenticationMiddleware.Create(TAuthenticationSample.Create)
-    );
+    .AddMiddleware(TMVCBasicAuthenticationMiddleware.Create(TAuthenticationSample.Create))
+    .AddMiddleware(TMVCStaticFilesMiddleware.Create(
+    '/', { StaticFilesPath }
+    '..\..\www' { DocumentRoot }
+    ));
 end;
 
 end.

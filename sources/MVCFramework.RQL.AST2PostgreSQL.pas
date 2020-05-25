@@ -2,7 +2,7 @@
 //
 // Delphi MVC Framework
 //
-// Copyright (c) 2010-2018 Daniele Teti and the DMVCFramework Team
+// Copyright (c) 2010-2020 Daniele Teti and the DMVCFramework Team
 //
 // https://github.com/danieleteti/delphimvcframework
 //
@@ -46,7 +46,7 @@ implementation
 
 uses
   System.SysUtils,
-  MVCFramework.RQL.AST2FirebirdSQL;
+  FireDAC.Phys.PG;
 
 { TRQLPostgreSQLCompiler }
 
@@ -81,7 +81,7 @@ function TRQLPostgreSQLCompiler.RQLFilterToSQL(const aRQLFIlter: TRQLFilter): st
 var
   lValue, lDBFieldName: string;
 begin
-  if aRQLFIlter.RightIsString then
+  if (aRQLFIlter.RightValueType = vtString) and (aRQLFIlter.Token <> tkContains) then
     lValue := aRQLFIlter.OpRight.QuotedString('''')
   else
     lValue := aRQLFIlter.OpRight;
@@ -91,38 +91,83 @@ begin
   case aRQLFIlter.Token of
     tkEq:
       begin
-        Result := Format('(%s = %s)', [lDBFieldName, lValue]);
+        if aRQLFIlter.RightValueType = vtNull then
+          Result := Format('(%s IS NULL)', [GetFieldNameForSQL(lDBFieldName)])
+        else
+          Result := Format('(%s = %s)', [GetFieldNameForSQL(lDBFieldName), lValue]);
       end;
     tkLt:
       begin
-        Result := Format('(%s < %s)', [lDBFieldName, lValue]);
+        Result := Format('(%s < %s)', [GetFieldNameForSQL(lDBFieldName), lValue]);
       end;
     tkLe:
       begin
-        Result := Format('(%s <= %s)', [lDBFieldName, lValue]);
+        Result := Format('(%s <= %s)', [GetFieldNameForSQL(lDBFieldName), lValue]);
       end;
     tkGt:
       begin
-        Result := Format('(%s > %s)', [lDBFieldName, lValue]);
+        Result := Format('(%s > %s)', [GetFieldNameForSQL(lDBFieldName), lValue]);
       end;
     tkGe:
       begin
-        Result := Format('(%s >= %s)', [lDBFieldName, lValue]);
+        Result := Format('(%s >= %s)', [GetFieldNameForSQL(lDBFieldName), lValue]);
       end;
     tkNe:
       begin
-        Result := Format('(%s != %s)', [lDBFieldName, lValue]);
+        if aRQLFIlter.RightValueType = vtNull then
+          Result := Format('(%s IS NOT NULL)', [GetFieldNameForSQL(lDBFieldName)])
+        else
+          Result := Format('(%s != %s)', [GetFieldNameForSQL(lDBFieldName), lValue]);
       end;
     tkContains:
       begin
-        Result := Format('(LOWER(%s) LIKE ''%%%s%%'')', [lDBFieldName, lValue.DeQuotedString.ToLower ])
+        lValue := Format('%%%s%%', [lValue]).QuotedString('''');
+        Result := Format('(%s ILIKE %s)', [GetFieldNameForSQL(lDBFieldName), lValue.ToLower])
+      end;
+    tkIn:
+      begin
+        case aRQLFIlter.RightValueType of
+          vtIntegerArray: // if array is empty, RightValueType is always vtIntegerArray
+            begin
+              Result := Format('(%s IN (%s))', [
+                GetFieldNameForSQL(lDBFieldName), string.Join(',', aRQLFIlter.OpRightArray)
+                ]);
+            end;
+          vtStringArray:
+            begin
+              Result := Format('(%s IN (%s))', [
+                GetFieldNameForSQL(lDBFieldName), string.Join(',', QuoteStringArray(aRQLFIlter.OpRightArray))
+                ]);
+            end;
+        else
+          raise ERQLException.Create('Invalid RightValueType for tkIn');
+        end;
+      end;
+    tkOut:
+      begin
+        case aRQLFIlter.RightValueType of
+          vtIntegerArray:
+            begin
+              Result := Format('(%s NOT IN (%s))', [
+                GetFieldNameForSQL(lDBFieldName), string.Join(',', aRQLFIlter.OpRightArray)
+                ]);
+            end;
+          vtStringArray:
+            begin
+              Result := Format('(%s NOT IN (%s))', [
+                GetFieldNameForSQL(lDBFieldName), string.Join(',', QuoteStringArray(aRQLFIlter.OpRightArray))
+                ]);
+            end;
+        else
+          raise ERQLException.Create('Invalid RightValueType for tkOut');
+        end;
       end;
   end;
 end;
 
 function TRQLPostgreSQLCompiler.RQLLimitToSQL(const aRQLLimit: TRQLLimit): string;
 begin
-  Result := Format(' LIMIT %d OFFSET %d', [aRQLLimit.Count, aRQLLimit.Start]);
+  Result := Format(' /*limit*/ LIMIT %d OFFSET %d', [aRQLLimit.Count, aRQLLimit.Start]);
 end;
 
 function TRQLPostgreSQLCompiler.RQLLogicOperatorToSQL(const aRQLFIlter: TRQLLogicOperator): string;
@@ -162,12 +207,12 @@ function TRQLPostgreSQLCompiler.RQLSortToSQL(const aRQLSort: TRQLSort): string;
 var
   I: Integer;
 begin
-  Result := ' ORDER BY';
+  Result := ' /*sort*/ ORDER BY';
   for I := 0 to aRQLSort.Fields.Count - 1 do
   begin
     if I > 0 then
       Result := Result + ',';
-    Result := Result + ' ' + GetDatabaseFieldName(aRQLSort.Fields[I]);
+    Result := Result + ' ' + GetFieldNameForSQL(GetDatabaseFieldName(aRQLSort.Fields[I]));
     if aRQLSort.Signs[I] = '+' then
       Result := Result + ' ASC'
     else

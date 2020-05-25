@@ -2,8 +2,8 @@ object MainForm: TMainForm
   Left = 0
   Top = 0
   Caption = 'JSON-RPC 2.0 Client'
-  ClientHeight = 527
-  ClientWidth = 846
+  ClientHeight = 546
+  ClientWidth = 842
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,8 +17,8 @@ object MainForm: TMainForm
   object PageControl1: TPageControl
     Left = 0
     Top = 0
-    Width = 846
-    Height = 527
+    Width = 842
+    Height = 546
     ActivePage = TabSheet1
     Align = alClient
     TabOrder = 0
@@ -28,27 +28,27 @@ object MainForm: TMainForm
         Left = 3
         Top = 22
         Width = 815
-        Height = 124
+        Height = 174
         Caption = 'Simple Types'
         TabOrder = 0
         object edtValue1: TEdit
           Left = 17
           Top = 32
-          Width = 70
+          Width = 32
           Height = 21
           TabOrder = 0
           Text = '42'
         end
         object edtValue2: TEdit
-          Left = 93
+          Left = 55
           Top = 32
-          Width = 70
+          Width = 26
           Height = 21
           TabOrder = 1
           Text = '10'
         end
         object btnSubstract: TButton
-          Left = 169
+          Left = 87
           Top = 30
           Width = 100
           Height = 25
@@ -57,9 +57,9 @@ object MainForm: TMainForm
           OnClick = btnSubstractClick
         end
         object edtResult: TEdit
-          Left = 273
+          Left = 193
           Top = 32
-          Width = 70
+          Width = 27
           Height = 21
           ReadOnly = True
           TabOrder = 3
@@ -67,31 +67,31 @@ object MainForm: TMainForm
         object edtReverseString: TEdit
           Left = 17
           Top = 80
-          Width = 144
+          Width = 88
           Height = 21
           TabOrder = 4
           Text = 'Daniele Teti'
         end
         object btnReverseString: TButton
-          Left = 167
+          Left = 111
           Top = 78
-          Width = 100
+          Width = 109
           Height = 25
           Caption = 'Reverse String'
           TabOrder = 5
           OnClick = btnReverseStringClick
         end
         object edtReversedString: TEdit
-          Left = 273
+          Left = 320
           Top = 80
-          Width = 178
+          Width = 131
           Height = 21
           ReadOnly = True
           TabOrder = 6
         end
         object dtNextMonday: TDateTimePicker
-          Left = 564
-          Top = 16
+          Left = 253
+          Top = 32
           Width = 102
           Height = 21
           Date = 43018.000000000000000000
@@ -99,9 +99,9 @@ object MainForm: TMainForm
           TabOrder = 7
         end
         object btnAddDay: TButton
-          Left = 672
-          Top = 14
-          Width = 128
+          Left = 361
+          Top = 30
+          Width = 104
           Height = 25
           Caption = 'Get Next Monday'
           TabOrder = 8
@@ -171,10 +171,78 @@ object MainForm: TMainForm
           WordWrap = True
           OnClick = btnInvalidMethodClick
         end
+        object CheckBox1: TCheckBox
+          Left = 226
+          Top = 82
+          Width = 88
+          Height = 17
+          Caption = 'As Uppercase'
+          TabOrder = 13
+        end
+        object btnDates: TButton
+          Left = 716
+          Top = 30
+          Width = 84
+          Height = 25
+          Caption = 'PlayWithDates'
+          TabOrder = 14
+          OnClick = btnDatesClick
+        end
+        object btnFloatsTests: TButton
+          Left = 626
+          Top = 30
+          Width = 84
+          Height = 25
+          Caption = 'Floats'
+          TabOrder = 15
+          OnClick = btnFloatsTestsClick
+        end
+        object btnWithJSON: TButton
+          Left = 545
+          Top = 30
+          Width = 75
+          Height = 25
+          Caption = 'JSON Prop'
+          TabOrder = 16
+          OnClick = btnWithJSONClick
+        end
+        object Edit1: TEdit
+          Left = 17
+          Top = 136
+          Width = 32
+          Height = 21
+          TabOrder = 17
+          Text = '42'
+        end
+        object Edit2: TEdit
+          Left = 55
+          Top = 136
+          Width = 26
+          Height = 21
+          TabOrder = 18
+          Text = '10'
+        end
+        object btnSubtractWithNamedParams: TButton
+          Left = 87
+          Top = 134
+          Width = 160
+          Height = 25
+          Caption = 'Subtract (named params)'
+          TabOrder = 19
+          OnClick = btnSubtractWithNamedParamsClick
+        end
+        object Edit3: TEdit
+          Left = 253
+          Top = 136
+          Width = 27
+          Height = 21
+          ReadOnly = True
+          TabOrder = 20
+        end
       end
       object GroupBox2: TGroupBox
         Left = 3
-        Top = 162
+        Top = 202
         Width = 489
         Height = 159
         Caption = 'Returning Objects'
@@ -212,7 +280,7 @@ object MainForm: TMainForm
       end
       object GroupBox3: TGroupBox
         Left = 504
-        Top = 162
+        Top = 202
         Width = 314
         Height = 310
         Caption = 'Returning Datasets'
@@ -249,7 +317,7 @@ object MainForm: TMainForm
       end
       object GroupBox4: TGroupBox
         Left = 3
-        Top = 343
+        Top = 383
         Width = 489
         Height = 129
         Caption = 'Passing Objects as parameters'
@@ -313,9 +381,12 @@ object MainForm: TMainForm
         Left = 11
         Top = 18
         Width = 489
-        Height = 159
+        Height = 391
         Caption = 'Returning Objects'
         TabOrder = 0
+        DesignSize = (
+          489
+          391)
         object edtSearchText: TEdit
           Left = 16
           Top = 24
@@ -337,7 +408,8 @@ object MainForm: TMainForm
           Left = 16
           Top = 53
           Width = 435
-          Height = 82
+          Height = 316
+          Anchors = [akLeft, akTop, akRight, akBottom]
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
           Font.Height = -13

@@ -27,12 +27,14 @@ implementation
 
 {$R *.dfm}
 
+
 uses
   AppControllerU,
   System.Generics.Collections,
   AuthenticationU,
   MVCFramework.Middleware.JWT,
   MVCFramework.JWT,
+  MVCFramework.Middleware.StaticFiles,
   System.DateUtils;
 
 procedure TWebModule1.WebModuleCreate(Sender: TObject);
@@ -52,14 +54,20 @@ begin
       JWT.LiveValidityWindowInSeconds := 10; // 60 * 60; // 1 hour
     end;
 
-  MVC := TMVCEngine.Create(Self);
-  MVC.Config[TMVCConfigKey.DocumentRoot] := '..\..\www';
-  MVC.Config[TMVCConfigKey.SessionTimeout] := '30';
-  MVC.Config[TMVCConfigKey.DefaultContentType] := 'text/html';
+  MVC := TMVCEngine.Create(Self,
+    procedure(Config: TMVCConfig)
+    begin
+      Config[TMVCConfigKey.SessionTimeout] := '30';
+      Config[TMVCConfigKey.DefaultContentType] := 'text/html';
+    end);
   MVC.AddController(TApp1MainController).AddController(TAdminController)
     .AddMiddleware(TMVCJWTAuthenticationMiddleware.Create(TAuthenticationSample.Create, lClaimsSetup, 'mys3cr37',
     '/login', [TJWTCheckableClaim.ExpirationTime, TJWTCheckableClaim.NotBefore, TJWTCheckableClaim.IssuedAt], 0
     // just for test, Leeway seconds is zero.
+    ))
+    .AddMiddleware(TMVCStaticFilesMiddleware.Create(
+    '/', { StaticFilesPath }
+    '..\..\www' { DocumentRoot }
     ));
 end;
 
